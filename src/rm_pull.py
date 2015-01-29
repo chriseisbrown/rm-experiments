@@ -4,7 +4,7 @@ Experiment to pull data from Pubmed and do some simple manipulation on it.
 
 @author: chriseisbrown
 '''
-
+import os
 import json
 import requests
 import pymongo
@@ -19,15 +19,36 @@ from Article import Article
 from datetime import datetime
 from StringIO import  StringIO
 
-# http://api.crunchbase.com/v/1/company/lyst.js?api_key=85n57qg5tsyqbfsnr32hfz9v  Ian's key
-# http://api.crunchbase.com/v/1/company/lyst.js?api_key=hdrqbey978rtpejejrqya4z9  Bart's key
+from xlrd import open_workbook
 
-#client = pymongo.MongoClient()
-#company_db = client.companies_database
-#c = company_db.companies.find({}, {"_id" : 0, "permalink" : 1}).limit(10)
+INPUT_FOLDER = "../input-data/"
+INPUT_FILENAME = "publications-summary.xlsx"
 
 
 def main():
+    
+    in_folder_name = INPUT_FOLDER
+    in_filename = INPUT_FILENAME
+    
+    infile = os.path.join(in_folder_name, in_filename)    
+    print "using input data from file {}".format(infile)
+    
+    # make publications map 
+    wb = open_workbook(infile) 
+    article_sheet = wb.sheet_by_name('2014')
+    article_ids = article_sheet.col_values(0,1)
+    article_urls = article_sheet.col_values(1,1)
+    
+    articles_map = {}
+    i=0        
+    for article_id in article_ids:  
+        article = Article()
+        article._id = article_id
+        article.URL = article_urls[i]
+        
+        articles_map[article._id] = article
+    
+    
     url = "http://www.ncbi.nlm.nih.gov/pubmed/25345090?report=xml&format=xml"
     results = requests.get(url)
     assert results.status_code == 200
