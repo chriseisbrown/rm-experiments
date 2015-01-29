@@ -5,7 +5,9 @@ Created on 26 Jan 2015
 '''
 class Article(object):
     def __init__(self):
-        self.id = ""
+        self._id = ""
+        
+        self.id_type = ""
         self.title = ""
         self.version = None
         self.abstract_text = ""
@@ -13,6 +15,6 @@ class Article(object):
         self.publish_date = None
 
     def display(self):
-        print 'Activity:', self.id, ' ', self.title, ' ', self.version, ' ', self.abstract_text
+        print 'Activity:', self._id, ' ', self.id_type, ' ', self.title, ' ', self.version, ' ', self.abstract_text
         print 'Published:', self.publish_date, ' ', self.journal
 

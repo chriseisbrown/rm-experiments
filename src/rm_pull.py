@@ -17,6 +17,7 @@ except ImportError:
     
 from Article import Article
 from datetime import datetime
+from StringIO import  StringIO
 
 # http://api.crunchbase.com/v/1/company/lyst.js?api_key=85n57qg5tsyqbfsnr32hfz9v  Ian's key
 # http://api.crunchbase.com/v/1/company/lyst.js?api_key=hdrqbey978rtpejejrqya4z9  Bart's key
@@ -43,9 +44,13 @@ def main():
     for elem in root.iterfind('PubmedArticle/MedlineCitation/PMID'):
         attributes = elem.attrib
         article.version = int(attributes['Version'])
-        article.id = elem.text
-        print article.id
-    
+        article._id = elem.text
+        print article._id
+        article.id_type = "PMID"
+        
+    for elem in root.iterfind('PubmedArticle/MedlineCitation/Article/ArticleTitle'):
+        article.title = elem.text
+             
     for elem in root.iterfind('PubmedArticle/MedlineCitation/Article/Abstract/AbstractText'):
         article.abstract_text = elem.text 
         
@@ -63,11 +68,14 @@ def main():
         published_date = datetime.strptime(year.text + ' ' + month.text + ' ' + day, '%Y %b %d' ).date()
         article.publish_date = published_date.isoformat()  
         
-    
-    json_doc = json.dumps(article.__dict__)
     article.display()
     
-
+    client = pymongo.MongoClient()
+    article_db = client.raremark_database
+    
+    article_key = {"_id": article._id}
+    
+    article_db.articles.update(article_key, article.__dict__, upsert=True )
 
 
 if __name__ == "__main__":
