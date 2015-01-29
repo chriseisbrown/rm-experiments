@@ -5,6 +5,7 @@ Experiment to pull data from Pubmed and do some simple manipulation on it.
 @author: chriseisbrown
 '''
 import os
+import re
 import json
 import requests
 import pymongo
@@ -24,6 +25,9 @@ from xlrd import open_workbook
 INPUT_FOLDER = "../input-data/"
 INPUT_FILENAME = "publications-summary.xlsx"
 
+#http://www.ncbi.nlm.nih.gov/pubmed?term=%22Fabry+Disease%22%5BMesh%5D
+#http://www.ncbi.nlm.nih.gov/pubmed?term=(%22Fabry%20Disease%22%5BMesh%5D)%20AND%20(%22Fabry%20Disease%22%5BMesh%5D%20AND%20(%20%222014%2F01%2F01%22%5BPDat%5D%20%3A%20%222014%2F12%2F31%22%5BPDat%5D%20))
+ 
 
 def main():
     client = pymongo.MongoClient()
@@ -80,21 +84,42 @@ def main():
             medline_date = pub_date.find('MedlineDate')
             if medline_date != None:
                 print "found medline date !"
+                
+                medline_date_txt = medline_date.text
+                
+                # have we a half-decent format ?
+                p1 = re.compile('^\d{4} ([A-Z][a-z]{2}-[A-Z][a-z]{2})')
+                m1 = p1.match(medline_date_txt)
+                # TODO: default this for now and sort out later
+                if m1 is not None:
+                    month_span = m1.group(1)
+                    month = "Apr"
+                else:
+                    month = "Dec"
+                
+                p2 = re.compile('^\d{4}')
+                m2 = p2.match(medline_date_txt)
+                year = m2.group()
+                if year is None:
+                    year = "1900"
+                    
+                day = "01"
+                
             else:
                 year = pub_date.find('Year')
-                if year == None:
+                if year is None:
                     year = "1900"
                 else:
                     year = year.text
                 
                 month = pub_date.find('Month')
-                if month == None:
+                if month is None:
                     month = "Jan"
                 else:
                     month = month.text
                   
                 day = pub_date.find('Day')
-                if day == None:
+                if day is None:
                     day = "01"
                 else:
                     day = day.text
