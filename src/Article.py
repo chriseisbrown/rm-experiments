@@ -15,6 +15,6 @@ class Article(object):
         self.publish_date = None
 
     def display(self):
-        print 'Activity:', self._id, ' ', self.id_type, ' ', self.title, ' ', self.version, ' ', self.abstract_text
-        print 'Published:', self.publish_date, ' ', self.journal
+        print 'Article:', self._id, ' ', self.id_type, ' ', self.title.encode('utf-8'), ' ', self.version, ' ', self.abstract_text.encode('utf-8')
+        print 'Published:', self.publish_date, ' ', self.journal.encode('utf-8')
 
