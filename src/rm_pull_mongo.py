@@ -66,6 +66,7 @@ def main():
         for elem in root.iterfind('PubmedArticle/MedlineCitation/PMID'):
             attributes = elem.attrib
             article.version = int(attributes['Version'])
+            article.doc_version = attributes['Version']
             article._id = elem.text
             print article._id
             article.id_type = "PMID"
