@@ -6,6 +6,7 @@ Created on 26 Jan 2015
 class Article(object):
     def __init__(self):
         self._id = ""
+        self.disease = ""
         self.URL = ""
         self.id_type = ""
         self.title = ""
