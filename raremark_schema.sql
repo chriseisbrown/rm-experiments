@@ -3,6 +3,7 @@ DROP TABLE article_abstract;
 
 CREATE TABLE `article` (
   `_id` int(10) unsigned NOT NULL,
+  `disease` varchar(200) DEFAULT NULL,
   `URL` varchar(200) DEFAULT NULL,
   `id_type` varchar(20) DEFAULT NULL,
   `title` varchar(200) DEFAULT NULL,

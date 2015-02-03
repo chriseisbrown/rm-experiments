@@ -26,8 +26,10 @@ INPUT_FOLDER = "../input-data/"
 INPUT_FILENAME = "publications-summary.xlsx"
 ABSTRACT_TABLE = "raremark.article_abstract"
 ARTICLE_TABLE = "raremark.article"
-ARTICLE_COLUMNS = "_id,URL,id_type,title,version,doc_version,journal,publish_date"
+ARTICLE_COLUMNS = "_id,disease,URL,id_type,title,version,doc_version,journal,publish_date"
 ABSTRACT_COLUMNS = "_id,abstract_text"
+
+DISEASE = "Fabry's disease"
 
 #http://www.ncbi.nlm.nih.gov/pubmed?term=%22Fabry+Disease%22%5BMesh%5D
 #http://www.ncbi.nlm.nih.gov/pubmed?term=(%22Fabry%20Disease%22%5BMesh%5D)%20AND%20(%22Fabry%20Disease%22%5BMesh%5D%20AND%20(%20%222014%2F01%2F01%22%5BPDat%5D%20%3A%20%222014%2F12%2F31%22%5BPDat%5D%20))
@@ -140,8 +142,8 @@ def main():
     db_error_count = 0 
     for article in articles_map.itervalues():    
            
-        insert_article_query = ("INSERT INTO {}({}) values(%s,%s,%s,%s,%s,%s,%s,%s) ON DUPLICATE KEY UPDATE \
-            _id =VALUES(_id),URL =VALUES(URL),id_type =VALUES(id_type),title =VALUES(title),version =VALUES(version), \
+        insert_article_query = ("INSERT INTO {}({}) values(%s,%s,%s,%s,%s,%s,%s,%s,%s) ON DUPLICATE KEY UPDATE \
+            _id =VALUES(_id),disease=(disease),URL =VALUES(URL),id_type =VALUES(id_type),title =VALUES(title),version =VALUES(version), \
             doc_version =VALUES(doc_version),journal =VALUES(journal),publish_date =VALUES(publish_date)"
             .format(ARTICLE_TABLE, ARTICLE_COLUMNS))
 
@@ -151,7 +153,7 @@ def main():
         
         try:
             cursor = cnx.cursor()
-            cursor.execute(insert_article_query, (article._id, article.URL, article.id_type, article.title.encode('utf-8'),
+            cursor.execute(insert_article_query, (article._id, DISEASE, article.URL, article.id_type, article.title.encode('utf-8'),
                                article.version, article.doc_version, article.journal.encode('utf-8'), article.publish_date))
             cursor.execute(insert_abstract_query, (article._id, article.abstract_text.encode('utf-8')))   
             cnx.commit()
