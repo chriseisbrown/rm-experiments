@@ -26,6 +26,8 @@ INPUT_FOLDER = "../input-data/"
 INPUT_FILENAME = "publications-summary.xlsx"
 ABSTRACT_TABLE = "raremark.article_abstract"
 ARTICLE_TABLE = "raremark.article"
+ARTICLE_COLUMNS = "_id,URL,id_type,title,version,doc_version,journal,publish_date"
+ABSTRACT_COLUMNS = "_id,abstract_text"
 
 #http://www.ncbi.nlm.nih.gov/pubmed?term=%22Fabry+Disease%22%5BMesh%5D
 #http://www.ncbi.nlm.nih.gov/pubmed?term=(%22Fabry%20Disease%22%5BMesh%5D)%20AND%20(%22Fabry%20Disease%22%5BMesh%5D%20AND%20(%20%222014%2F01%2F01%22%5BPDat%5D%20%3A%20%222014%2F12%2F31%22%5BPDat%5D%20))
@@ -137,9 +139,15 @@ def main():
     db_count = 0
     db_error_count = 0 
     for article in articles_map.itervalues():    
-        
-        insert_article_query = "INSERT INTO {} values(%s,%s,%s,%s,%s,%s,%s,%s)".format(ARTICLE_TABLE)
-        insert_abstract_query = "INSERT INTO {} values(%s, %s)".format(ABSTRACT_TABLE)
+           
+        insert_article_query = ("INSERT INTO {}({}) values(%s,%s,%s,%s,%s,%s,%s,%s) ON DUPLICATE KEY UPDATE \
+            _id =VALUES(_id),URL =VALUES(URL),id_type =VALUES(id_type),title =VALUES(title),version =VALUES(version), \
+            doc_version =VALUES(doc_version),journal =VALUES(journal),publish_date =VALUES(publish_date)"
+            .format(ARTICLE_TABLE, ARTICLE_COLUMNS))
+
+        insert_abstract_query = ("INSERT INTO {}({}) values(%s, %s) ON DUPLICATE KEY UPDATE \
+            _id=VALUES(_id),abstract_text=VALUES(abstract_text)"
+            .format(ABSTRACT_TABLE, ABSTRACT_COLUMNS))
         
         try:
             cursor = cnx.cursor()
@@ -149,14 +157,14 @@ def main():
             cnx.commit()
             db_count += 1
         except mysql.connector.Error as error:
-            print "Error {} attempting to insert article {}".format(error, article._id)
+            print "Error {} attempting to upsert article {}".format(error, article._id)
             db_error_count += 1
             
         
     
     cursor.close()
     cnx.close()
-    print "Refreshed database with {} items and {} errors".format(db_count, db_error_count)
+    print "Refreshed database with {} items and had {} errors".format(db_count, db_error_count)
 
 
 
