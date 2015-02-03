@@ -29,8 +29,8 @@ ARTICLE_TABLE = "raremark.article"
 ARTICLE_COLUMNS = "_id,disease,URL,id_type,title,version,doc_version,journal,publish_date"
 ABSTRACT_COLUMNS = "_id,abstract_text"
 
-#disease = ["Fabry", "Huntingdon"]
-disease = ["Huntingdon"]
+disease = ["Fabry", "Huntingdon"]
+#disease = ["Huntingdon"]
 
 #url = "http://www.ncbi.nlm.nih.gov/pubmed/25345090?report=xml&format=xml"
 #http://www.ncbi.nlm.nih.gov/pubmed?term=%22Fabry+Disease%22%5BMesh%5D
@@ -54,18 +54,21 @@ def main():
         article_urls = article_sheet.col_values(1,1)
         
         articles_map = {}
-            
+           
         for article_url in article_urls:  
+            
+            if article_url is None:
+                print "bad URL"
             
             article = Article()
             article.disease = sheet_name        
             article.URL = article_url + "?report=xml&format=xml"
-            results = requests.get(article.URL)
-            assert results.status_code == 200
-        
-            raw_txt = results.content
             
+            results = requests.get(article.URL)
+            assert results.status_code == 200  
+        
             # need to unescape data that was returned
+            raw_txt = results.content
             txt = saxutils.unescape(raw_txt)
             
             root = ET.fromstring(txt)
@@ -137,8 +140,8 @@ def main():
                 
             #article.display()    
             articles_map[article._id] = article
-            
-            
+                
+                
         # do writes to db from map
         db_count = 0
         db_error_count = 0 
@@ -164,8 +167,6 @@ def main():
                 print "Error {} attempting to upsert article {}".format(error, article._id)
                 db_error_count += 1
             
-        
-    
     cursor.close()
     cnx.close()
     print "Refreshed database with {} items and had {} errors".format(db_count, db_error_count)
