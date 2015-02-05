@@ -10,9 +10,12 @@ select * from raremark.article as a WHERE a._id=24582695;
 select * from raremark.article_abstract;
 select * from raremark.article order by journal;
 select * from raremark.disease;
+select * from raremark.mesh_term;
 
+truncate table raremark.article;
+truncate table raremark.article_abstract;
 
-select * from raremark.article;
+select count(*) from raremark.article_abstract;
  
 SELECT a._id, a.publish_date, a.title, a.URL, ab.abstract_text
 FROM article AS a
@@ -22,5 +25,22 @@ WHERE a._id=23350580;
 commit;
 INSERT INTO raremark.disease values(1, "Fabry's disease", "Fabry");
 INSERT INTO raremark.disease values(2, "Huntingdon's disease", "Huntingdon");
+INSERT INTO raremark.disease values(3, "Muscular Atrophy, Spinal", "SMA");
 INSERT INTO raremark.mesh_term values(1, 1, "Anderson-Fabry Disease");
 INSERT INTO raremark.mesh_term values(2, 1, "alpha-Galactosidase A Deficiency Disease");
+INSERT INTO raremark.mesh_term values(3, 1, "Fabry Disease");
+INSERT INTO raremark.mesh_term values(5, 1, "Fabry's disease");
+INSERT INTO raremark.mesh_term values(4, 3, "Muscular Atrophy, Spinal");
+INSERT INTO raremark.mesh_term values(6, 2, "Huntington's Disease");
+
+
+INSERT INTO raremark.article(_id,disease,URL,id_type,title,version,doc_version,journal,publish_date) values(
+'25565388'
+,'some name',
+'http://www.ncbi.nlm.nih.gov/pubmed/25565388',
+'PMID',
+'Hypothalamic-pituitary-adrenal axis functioning in Huntington\'s disease and its association with depressive symptoms and suicidality.',1,'1','Journal of neuroendocrinology',
+'2015-01-06') 
+
+
+ON DUPLICATE KEY UPDATE             _id =VALUES(_id),disease=(disease),URL =VALUES(URL),id_type =VALUES(id_type),title =VALUES(title),version =VALUES(version),             doc_version =VALUES(doc_version),journal =VALUES(journal),publish_date =VALUES(publish_date)

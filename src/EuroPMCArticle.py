@@ -8,6 +8,7 @@ class EuroPMCArticle(object):
         self.id = ""
         self.source = ""
         self.pmid = ""
+        self.disease_name = ""
         self.title = ""
         self.pub_year = ""
         self.author_string = ""

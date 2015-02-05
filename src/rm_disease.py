@@ -25,7 +25,7 @@ ARTICLE_TABLE = "raremark.article"
 DISEASE_TABLE = "raremark.disease"
 MESHTERM_TABLE = "raremark.mesh_term"
 
-ARTICLE_COLUMNS = "_id,URL,id_type,title,version,doc_version,journal,publish_date"
+ARTICLE_COLUMNS = "_id,disease,URL,id_type,title,version,doc_version,journal,publish_date"
 ABSTRACT_COLUMNS = "_id,abstract_text"
 DISEASE_COLUMNS = "_id,disease_name,short_name"
 MESHTERM_COLUMNS = "_id,disease_id,entry_term"
@@ -45,7 +45,7 @@ def process_hit_count(rootXML):
     return hits
     
 
-def process_EuroPMC_result(rootXML):
+def process_EuroPMC_result(disease_name, rootXML):
     
     hits = process_hit_count(rootXML)
     if hits == 0:
@@ -62,6 +62,8 @@ def process_EuroPMC_result(rootXML):
             euro_article_result.pub_year = result.find('pubYear').text
             euro_article_result.author_string = result.find('authorString').text
             euro_article_result.title = result.find('title').text
+            
+            euro_article_result.disease_name = disease_name
             
             euro_articles_map[euro_article_result.id] = euro_article_result
             
@@ -140,7 +142,31 @@ def process_PMC_result(rootXML):
         
     return article
 
-    
+def write_db(cnx, articles_map):
+    # do writes to db from map
+    db_count = 0
+    db_error_count = 0 
+    for article in articles_map.itervalues():    
+           
+        insert_article_query = ("INSERT INTO {}({}) values(%s,%s,%s,%s,%s,%s,%s,%s,%s) ON DUPLICATE KEY UPDATE \
+            _id =VALUES(_id),disease=(disease),URL =VALUES(URL),id_type =VALUES(id_type),title =VALUES(title),version =VALUES(version), \
+            doc_version =VALUES(doc_version),journal =VALUES(journal),publish_date =VALUES(publish_date)"
+            .format(ARTICLE_TABLE, ARTICLE_COLUMNS))
+
+        insert_abstract_query = ("INSERT INTO {}({}) values(%s, %s) ON DUPLICATE KEY UPDATE \
+            _id=VALUES(_id),abstract_text=VALUES(abstract_text)"
+            .format(ABSTRACT_TABLE, ABSTRACT_COLUMNS))
+        
+        try:
+            cursor = cnx.cursor()
+            cursor.execute(insert_article_query, (article._id, article.disease, article.URL, article.id_type, article.title.encode('utf-8'),
+                               article.version, article.doc_version, article.journal.encode('utf-8'), article.publish_date))
+            cursor.execute(insert_abstract_query, (article._id, article.abstract_text.encode('utf-8')))   
+            cnx.commit()
+            db_count += 1
+        except mysql.connector.Error as error:
+            print "Error {} attempting to upsert article {}".format(error, article._id)
+            db_error_count += 1    
             
 
 def main():
@@ -174,7 +200,8 @@ def main():
             category_list.append(quoted_category)
         
         category_query = ",".join(category_list)
-        
+
+        # check the Euro PMC database for index data on articles
         URL = EURO_PMC_URL + category_query + EURO_PMC_URL_EXTENSION 
         print URL
         results = requests.get(URL)            
@@ -185,14 +212,14 @@ def main():
         txt = saxutils.unescape(raw_txt)
         
         root = ET.fromstring(txt)
-        results = process_EuroPMC_result(root)
+        euro_articles = process_EuroPMC_result(dis.name, root)
         
-        if bool(results):
+        # if we get results from the EuroPMC index then go to PubMed Central and get details
+        if bool(euro_articles):
             articles_map = {}
             
-            for result_id in results.iterkeys():
+            for result_id in euro_articles.iterkeys():
                 URL = PMC_URL + result_id + PMC_URL_EXTENSION
-                print URL
                 results = requests.get(URL)            
                 assert results.status_code == 200  
                 
@@ -204,9 +231,14 @@ def main():
                 result = process_PMC_result(root)
                 
                 result.URL = PMC_URL + result_id
+                result.disease = euro_articles.get(result_id).disease_name
                     
                 articles_map[result._id] = result
-    
+            if bool(articles_map):
+                print "Found {} articles for the database".format(len(articles_map.keys()))    
+                write_db(cnx, articles_map)
+        else:
+            print "No articles found"
             
     
     cursor.close()
