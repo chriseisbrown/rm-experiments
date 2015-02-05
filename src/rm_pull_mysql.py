@@ -101,6 +101,7 @@ def main():
                     # have we a half-decent format ?
                     p1 = re.compile('^\d{4} ([A-Z][a-z]{2}-[A-Z][a-z]{2})')
                     m1 = p1.match(medline_date_txt)
+                    
                     # TODO: default this for now and sort out later
                     if m1 is not None:
                         month_span = m1.group(1)

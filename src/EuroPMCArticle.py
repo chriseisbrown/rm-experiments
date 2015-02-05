@@ -3,19 +3,14 @@ Created on 26 Jan 2015
 
 @author: chriseisbrown
 '''
-class Article(object):
+class EuroPMCArticle(object):
     def __init__(self):
-        self._id = ""
-        self.disease = ""
-        self.URL = ""
-        self.id_type = ""
+        self.id = ""
+        self.source = ""
+        self.pmid = ""
         self.title = ""
-        self.version = None
-        self.doc_version = ""
-        self.abstract_text = ""
-        self.journal = ""
-        self.publish_date = None
         self.pub_year = ""
+        self.author_string = ""
 
     def display(self):
         print 'Article:', self._id, ' ', self.id_type, ' ', self.title.encode('utf-8'), ' ', self.abstract_text.encode('utf-8')
