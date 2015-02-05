@@ -15,7 +15,6 @@ class Article(object):
         self.abstract_text = ""
         self.journal = ""
         self.publish_date = None
-        #self.pub_year = ""
 
     def display(self):
         print 'Article:', self._id, ' ', self.id_type, ' ', self.title.encode('utf-8'), ' ', self.abstract_text.encode('utf-8')

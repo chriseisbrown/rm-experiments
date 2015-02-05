@@ -13,7 +13,5 @@ class EuroPMCArticle(object):
         self.pub_year = ""
         self.author_string = ""
 
-    def display(self):
-        print 'Article:', self._id, ' ', self.id_type, ' ', self.title.encode('utf-8'), ' ', self.abstract_text.encode('utf-8')
-        print 'Published:', self.publish_date, ' ', self.version, ' ', self.doc_version, ' ', self.journal.encode('utf-8')
+
 

@@ -31,7 +31,10 @@ DISEASE_COLUMNS = "_id,disease_name,short_name"
 MESHTERM_COLUMNS = "_id,disease_id,entry_term"
 
 EURO_PMC_URL  = "http://www.ebi.ac.uk/europepmc/webservices/rest/search/query=title:"
-EURO_PMC_URL_EXTENSION = " src:MED pub_year:2015"
+EURO_PMC_URL_SRC_EXTENSION = " src:MED "
+EURO_PMC_URL_YEAR_EXTENSION = " pub_year:"
+
+YEARS = ["2014", "2015"]
 
 PMC_URL = "http://www.ncbi.nlm.nih.gov/pubmed/"
 PMC_URL_EXTENSION = "?report=xml&format=xml"
@@ -199,27 +202,12 @@ def main():
             quoted_category = dbl_quote + cat + dbl_quote 
             category_list.append(quoted_category)
         
-        category_query = ",".join(category_list)
-
-        # check the Euro PMC database for index data on articles
-        URL = EURO_PMC_URL + category_query + EURO_PMC_URL_EXTENSION 
-        print URL
-        results = requests.get(URL)            
-        assert results.status_code == 200  
-        
-        # need to unescape data that was returned
-        raw_txt = results.content
-        txt = saxutils.unescape(raw_txt)
-        
-        root = ET.fromstring(txt)
-        euro_articles = process_EuroPMC_result(dis.name, root)
-        
-        # if we get results from the EuroPMC index then go to PubMed Central and get details
-        if bool(euro_articles):
-            articles_map = {}
-            
-            for result_id in euro_articles.iterkeys():
-                URL = PMC_URL + result_id + PMC_URL_EXTENSION
+        #category_query = ",".join(category_list)
+        for year in YEARS:
+            for category_query in category_list:
+                # check the Euro PMC database for index data on articles
+                URL = EURO_PMC_URL + category_query + EURO_PMC_URL_SRC_EXTENSION +  EURO_PMC_URL_YEAR_EXTENSION + year
+                print URL
                 results = requests.get(URL)            
                 assert results.status_code == 200  
                 
@@ -228,19 +216,35 @@ def main():
                 txt = saxutils.unescape(raw_txt)
                 
                 root = ET.fromstring(txt)
-                result = process_PMC_result(root)
+                euro_articles = process_EuroPMC_result(dis.name, root)
                 
-                result.URL = PMC_URL + result_id
-                result.disease = euro_articles.get(result_id).disease_name
+                # if we get results from the EuroPMC index then go to PubMed Central and get details
+                if bool(euro_articles):
+                    articles_map = {}
                     
-                articles_map[result._id] = result
-            if bool(articles_map):
-                print "Found {} articles for the database".format(len(articles_map.keys()))    
-                write_db(cnx, articles_map)
-        else:
-            print "No articles found"
-            
-    
+                    for result_id in euro_articles.iterkeys():
+                        URL = PMC_URL + result_id + PMC_URL_EXTENSION
+                        results = requests.get(URL)            
+                        assert results.status_code == 200  
+                        
+                        # need to unescape data that was returned
+                        raw_txt = results.content
+                        txt = saxutils.unescape(raw_txt)
+                        
+                        root = ET.fromstring(txt)
+                        result = process_PMC_result(root)
+                        
+                        result.URL = PMC_URL + result_id
+                        result.disease = euro_articles.get(result_id).disease_name
+                            
+                        articles_map[result._id] = result
+                    if bool(articles_map):
+                        print "Found {} articles for the database".format(len(articles_map.keys()))    
+                        write_db(cnx, articles_map)
+                else:
+                    print "No articles found"
+                
+        
     cursor.close()
     cnx.close()
     
