@@ -1,7 +1,14 @@
 DROP TABLE article;
+DROP TABLE article_id;
 DROP TABLE article_abstract;
 DROP TABLE disease;
 DROP TABLE mesh_term;
+
+CREATE TABLE `article_id` (
+  `_id` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`_id`),
+  UNIQUE KEY `_id_UNIQUE` (`_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE `article` (
   `_id` int(10) unsigned NOT NULL,

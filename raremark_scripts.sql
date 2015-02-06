@@ -12,6 +12,8 @@ select * from raremark.article order by journal;
 select * from raremark.disease;
 select * from raremark.mesh_term;
 
+truncate table raremark.disease;
+truncate table raremark.article_id;
 truncate table raremark.article;
 truncate table raremark.article_abstract;
 
@@ -28,7 +30,7 @@ INSERT INTO raremark.disease values(1, "Fabry's disease", "Fabry");
 INSERT INTO raremark.disease values(2, "Huntingdon's disease", "Huntingdon");
 INSERT INTO raremark.disease values(3, "Muscular Atrophy, Spinal", "SMA");
 INSERT INTO raremark.disease values(4, "Duchenne muscular dystrophy", "Duchenne");
-INSERT INTO raremark.disease values(5, "Behçet disease", "Behçet");
+INSERT INTO raremark.disease values(5, "Behcet disease", "Behcet");
 INSERT INTO raremark.disease values(6, "Gaucher disease", "Gaucher");
 INSERT INTO raremark.disease values(7, "Myelofibrosis", "Myelofibrosis");
 
@@ -40,13 +42,12 @@ Proximal spinal muscular atrophy
 INSERT INTO raremark.mesh_term values(1, 1, "Anderson-Fabry Disease");
 INSERT INTO raremark.mesh_term values(2, 1, "alpha-Galactosidase A Deficiency Disease");
 INSERT INTO raremark.mesh_term values(3, 1, "Fabry Disease");
+INSERT INTO raremark.mesh_term values(4, 3, "Muscular Atrophy, Spinal");
 INSERT INTO raremark.mesh_term values(5, 1, "Fabry's disease");
-
 INSERT INTO raremark.mesh_term values(6, 2, "Huntington's Disease");
 
-INSERT INTO raremark.mesh_term values(4, 3, "Muscular Atrophy, Spinal");
 
-
+insert into raremark.article_id(_id) values("12611534") on duplicate key update _id=values(_id);
 
 INSERT INTO raremark.article(_id,disease,URL,id_type,title,version,doc_version,journal,publish_date) values(
 '25565388'

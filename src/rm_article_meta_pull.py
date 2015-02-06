@@ -22,10 +22,12 @@ from Article import Article
 
 ABSTRACT_TABLE = "raremark.article_abstract"
 ARTICLE_TABLE = "raremark.article"
+ARTICLE_ID_TABLE = "raremark.article_id"
 DISEASE_TABLE = "raremark.disease"
 MESHTERM_TABLE = "raremark.mesh_term"
 
 ARTICLE_COLUMNS = "_id,disease,URL,id_type,title,version,doc_version,journal,publish_date"
+ARTICLE_ID_COLUMN = "_id"
 ABSTRACT_COLUMNS = "_id,abstract_text"
 DISEASE_COLUMNS = "_id,disease_name,short_name"
 MESHTERM_COLUMNS = "_id,disease_id,entry_term"
@@ -49,16 +51,15 @@ def process_hit_count(rootXML):
     
 
 def process_EuroPMC_result(disease_name, rootXML):
-    
+    euro_articles_map = {}
     hits = process_hit_count(rootXML)
     if hits == 0:
-        return
+        return euro_articles_map
     
-    euro_article_result = EuroPMCArticle()
-    euro_articles_map = {}
     
-    for results in rootXML.iterfind('resultList'):
-        for result in results:
+    for result in rootXML.iterfind('resultList/result'):
+        #for result in results:
+            euro_article_result = EuroPMCArticle()
             euro_article_result.id = result.find('id').text
             euro_article_result.pmid = result.find('pmid').text
             euro_article_result.source = result.find('source').text
@@ -82,7 +83,7 @@ def process_PMC_result(rootXML):
         article.version = int(attributes['Version'])
         article.doc_version = attributes['Version']
         article._id = elem.text
-        print article._id
+        #print article._id
         article.id_type = "PMID"
         
     for elem in rootXML.iterfind('PubmedArticle/MedlineCitation/Article/ArticleTitle'):
@@ -145,7 +146,8 @@ def process_PMC_result(rootXML):
         
     return article
 
-def write_db(cnx, articles_map):
+
+def write_article_db(cnx, articles_map):
     # do writes to db from map
     db_count = 0
     db_error_count = 0 
@@ -170,7 +172,65 @@ def write_db(cnx, articles_map):
         except mysql.connector.Error as error:
             print "Error {} attempting to upsert article {}".format(error, article._id)
             db_error_count += 1    
+
+'''
+Write any article ids that we found in the euro index
+'''             
+def write_db_euro_articles(cnx, articles_map):
+    # do writes to db from map
+    db_count = 0
+    db_error_count = 0 
+    for articleId in articles_map.iterkeys():    
+           
+        insert_euro_article_query = ("insert into {}({}) values(%(_id)s) on duplicate key update _id=values(_id)"
+            .format(ARTICLE_ID_TABLE, ARTICLE_ID_COLUMN))
+        
+        try:
+            cursor = cnx.cursor()
+            cursor.execute(insert_euro_article_query, {'_id':articleId})
+            db_count += 1
+        except mysql.connector.Error as error:
+            print "Error {} attempting to upsert article_id {} into {}".format(error, articleId, ARTICLE_ID_TABLE)
+            db_error_count += 1  
+        
+    cnx.commit() 
+
+
+'''
+Build a list of ids in the database to retrieve article data for
+'''
+def filter_euro_articles(cnx, euro_articles_map):
+    db_count = 0
+    db_error_count = 0 
+    
+    delete_euro_article_query = ("delete from {} WHERE {} in (select {} from {})"
+        .format(ARTICLE_ID_TABLE, ARTICLE_ID_COLUMN, ARTICLE_ID_COLUMN, ARTICLE_TABLE))
+    
+    try:
+        cursor = cnx.cursor()
+        cursor.execute(delete_euro_article_query)
+        cnx.commit()
+    except mysql.connector.Error as error:
+        print "Error {} attempting to delete from table {}".format(error, ARTICLE_ID_TABLE)
+    
+
+    select_euro_article_id_query = ("select {} from {}".format(ARTICLE_ID_COLUMN, ARTICLE_ID_TABLE))
+    
+    try:
+        cursor = cnx.cursor()
+        cursor.execute(select_euro_article_id_query)
+        
+        filtered_euro_articles_map = {}
+        for _id in cursor:
+            euro_article = euro_articles_map.get(str(_id[0]))
+            filtered_euro_articles_map[str(_id[0])] = euro_article
             
+    except mysql.connector.Error as error:
+        print "Error {} attempting to select from table {}".format(error, ARTICLE_ID_TABLE)
+        db_error_count += 1  
+
+    return filtered_euro_articles_map
+
 
 '''
 MAIN 
@@ -197,7 +257,7 @@ def main():
     For each disease get the MeSH category terms 
     '''
     for dis in disease:
-        print dis.short_name        
+        print dis.short_name, dis.name        
         mesh_term_query = ("select entry_term from {} where disease_id= %(disease_id)s").format(MESHTERM_TABLE)
         cursor.execute(mesh_term_query, {'disease_id' : dis._id})
         for entry_term in cursor:
@@ -208,7 +268,7 @@ def main():
         '''
         category_list = []
         for category in dis.mesh_category:
-            cat = category[0]
+            cat = category[0]    # because category is a tuple
             dbl_quote = '"'
             quoted_category = dbl_quote + cat + dbl_quote 
             category_list.append(quoted_category)
@@ -216,10 +276,9 @@ def main():
         
         for year in YEARS:
             '''
-            Use the Euro PMC REST service for each Mesh category for each year required 
+            Use the Euro PMC RESTful service for each Mesh category for each year required 
             '''
             for category_query in category_list:
-                # check the Euro PMC database for index data on articles
                 URL = EURO_PMC_URL + category_query + EURO_PMC_URL_SRC_EXTENSION +  EURO_PMC_URL_YEAR_EXTENSION + year
                 print URL
                 results = requests.get(URL)            
@@ -230,33 +289,40 @@ def main():
                 txt = saxutils.unescape(raw_txt)
                 
                 root = ET.fromstring(txt)
-                euro_articles = process_EuroPMC_result(dis.name, root)
-                
-                # if we get results from the EuroPMC index then go to PubMed Central and get details
-                if bool(euro_articles):
-                    articles_map = {}
-                    
-                    for result_id in euro_articles.iterkeys():
-                        URL = PMC_URL + result_id + PMC_URL_EXTENSION
-                        results = requests.get(URL)            
-                        assert results.status_code == 200  
-                        
-                        # need to unescape data that was returned
-                        raw_txt = results.content
-                        txt = saxutils.unescape(raw_txt)
-                        
-                        root = ET.fromstring(txt)
-                        result = process_PMC_result(root)
-                        
-                        result.URL = PMC_URL + result_id
-                        result.disease = euro_articles.get(result_id).disease_name
+                euro_articles_map = process_EuroPMC_result(dis.name, root)
+                '''
+                If we get results from the EuroPMC index then go to US PubMed Central and get details
+                '''
+                print "Found {} euro article ids for consideration".format(len(euro_articles_map.keys()))    
+                if(bool(euro_articles_map)):
+                    write_db_euro_articles(cnx, euro_articles_map)
+                    filtered_euro_articles_map = filter_euro_articles(cnx, euro_articles_map)                    
+                    '''
+                    After filtering out any we already have , add to database
+                    '''
+                    if bool(filtered_euro_articles_map):
+                        articles_map = {}
+                        for result_id in filtered_euro_articles_map.iterkeys():
+                            URL = PMC_URL + result_id + PMC_URL_EXTENSION
+                            results = requests.get(URL)            
+                            assert results.status_code == 200  
                             
-                        articles_map[result._id] = result
-                    if bool(articles_map):
-                        print "Found {} articles for the database".format(len(articles_map.keys()))    
-                        write_db(cnx, articles_map)
-                else:
-                    print "No articles found"
+                            # need to unescape data that was returned
+                            raw_txt = results.content
+                            txt = saxutils.unescape(raw_txt)
+                            
+                            root = ET.fromstring(txt)
+                            result = process_PMC_result(root)
+                            
+                            result.URL = PMC_URL + result_id
+                            result.disease = filtered_euro_articles_map.get(result_id).disease_name
+                                
+                            articles_map[result._id] = result
+                        if bool(articles_map):
+                            print "Found {} articles for the database".format(len(articles_map.keys()))    
+                            write_article_db(cnx, articles_map)
+                    else:
+                        print "No articles found"
                 
         
     cursor.close()
