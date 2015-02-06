@@ -327,6 +327,7 @@ def main():
         
     cursor.close()
     cnx.close()
+    print "Done!"
     
 if __name__ == "__main__":
     main()

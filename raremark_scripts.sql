@@ -13,11 +13,12 @@ select * from raremark.disease;
 select * from raremark.mesh_term;
 
 truncate table raremark.disease;
+
 truncate table raremark.article_id;
 truncate table raremark.article;
 truncate table raremark.article_abstract;
 
-select count(*) from raremark.article_abstract;
+select count(*) from raremark.article;
  
 SELECT a._id, a.publish_date, a.title, a.URL, ab.abstract_text
 FROM article AS a
@@ -26,6 +27,7 @@ WHERE a._id=23350580;
 
 commit;
 
+Proximal spinal muscular atrophy
 INSERT INTO raremark.disease values(1, "Fabry's disease", "Fabry");
 INSERT INTO raremark.disease values(2, "Huntingdon's disease", "Huntingdon");
 INSERT INTO raremark.disease values(3, "Muscular Atrophy, Spinal", "SMA");
@@ -33,10 +35,6 @@ INSERT INTO raremark.disease values(4, "Duchenne muscular dystrophy", "Duchenne"
 INSERT INTO raremark.disease values(5, "Behcet disease", "Behcet");
 INSERT INTO raremark.disease values(6, "Gaucher disease", "Gaucher");
 INSERT INTO raremark.disease values(7, "Myelofibrosis", "Myelofibrosis");
-
-Proximal spinal muscular atrophy
-
-
 
 
 INSERT INTO raremark.mesh_term values(1, 1, "Anderson-Fabry Disease");
