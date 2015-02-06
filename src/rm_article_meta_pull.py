@@ -172,22 +172,30 @@ def write_db(cnx, articles_map):
             db_error_count += 1    
             
 
+'''
+MAIN 
+''' 
 def main():
     cnx = mysql.connector.connect(user='root', database='raremark')
     cursor = cnx.cursor()
-    
+
+    '''
+    Build disease list from disease table 
+    '''
     disease_query = ("select {} from {}").format(DISEASE_COLUMNS, DISEASE_TABLE)
     cursor.execute(disease_query)
     
-    disease = []
-    
+    disease = [] 
     for(_id,disease_name,short_name) in cursor:
         d = Disease()
         d._id = _id
         d.name = disease_name
         d.short_name = short_name
         disease.append(d)
-        
+ 
+    '''
+    For each disease get the MeSH category terms 
+    '''
     for dis in disease:
         print dis.short_name        
         mesh_term_query = ("select entry_term from {} where disease_id= %(disease_id)s").format(MESHTERM_TABLE)
@@ -195,15 +203,21 @@ def main():
         for entry_term in cursor:
             dis.mesh_category.append(entry_term)
         
+        '''
+        category_list will hold all MeSH terms for this disease 
+        '''
         category_list = []
         for category in dis.mesh_category:
             cat = category[0]
             dbl_quote = '"'
             quoted_category = dbl_quote + cat + dbl_quote 
             category_list.append(quoted_category)
-        
         #category_query = ",".join(category_list)
+        
         for year in YEARS:
+            '''
+            Use the Euro PMC REST service for each Mesh category for each year required 
+            '''
             for category_query in category_list:
                 # check the Euro PMC database for index data on articles
                 URL = EURO_PMC_URL + category_query + EURO_PMC_URL_SRC_EXTENSION +  EURO_PMC_URL_YEAR_EXTENSION + year
