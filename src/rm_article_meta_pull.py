@@ -36,7 +36,8 @@ EURO_PMC_URL  = "http://www.ebi.ac.uk/europepmc/webservices/rest/search/query=ti
 EURO_PMC_URL_SRC_EXTENSION = " src:MED "
 EURO_PMC_URL_YEAR_EXTENSION = " pub_year:"
 
-YEARS = ["2014", "2015"]
+YEARS = ["2010", "2011", "2012", "2013", "2014", "2015"]
+MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 PMC_URL = "http://www.ncbi.nlm.nih.gov/pubmed/"
 PMC_URL_EXTENSION = "?report=xml&format=xml"
@@ -60,11 +61,19 @@ def process_EuroPMC_result(disease_name, rootXML):
     for result in rootXML.iterfind('resultList/result'):
         #for result in results:
             euro_article_result = EuroPMCArticle()
+            
             euro_article_result.id = result.find('id').text
             euro_article_result.pmid = result.find('pmid').text
             euro_article_result.source = result.find('source').text
             euro_article_result.pub_year = result.find('pubYear').text
-            euro_article_result.author_string = result.find('authorString').text
+            
+            euro_article_result.author = result.find('authorString')
+            if euro_article_result.author is None:
+                euro_article_result.author_string = ""
+            else:
+                euro_article_result.author_string = result.find('authorString').text
+            
+            
             euro_article_result.title = result.find('title').text
             
             euro_article_result.disease_name = disease_name
@@ -110,7 +119,9 @@ def process_PMC_result(rootXML):
             # TODO: default this for now and sort out later
             if m1 is not None:
                 month_span = m1.group(1)
-                month = "Apr"
+                month = month_span[:3]
+                if  month not in MONTHS:
+                    month = "Jan"   # default to Jan
             else:
                 month = "Dec"
             
@@ -131,9 +142,11 @@ def process_PMC_result(rootXML):
             
             month = pub_date.find('Month')
             if month is None:
-                month = "Jan"
+                month = "Jan"   # default to Jan
             else:
                 month = month.text
+                if month not in MONTHS:
+                    month = "Jan" # default to Jan
               
             day = pub_date.find('Day')
             if day is None:
@@ -257,7 +270,7 @@ def main():
     For each disease get the MeSH category terms 
     '''
     for dis in disease:
-        print dis.short_name, dis.name        
+        print "***", dis.short_name, ":", dis.name, "***"        
         mesh_term_query = ("select entry_term from {} where disease_id= %(disease_id)s").format(MESHTERM_TABLE)
         cursor.execute(mesh_term_query, {'disease_id' : dis._id})
         for entry_term in cursor:
@@ -298,7 +311,7 @@ def main():
                     write_db_euro_articles(cnx, euro_articles_map)
                     filtered_euro_articles_map = filter_euro_articles(cnx, euro_articles_map)                    
                     '''
-                    After filtering out any we already have , add to database
+                    After filtering out any we already have, add to database
                     '''
                     if bool(filtered_euro_articles_map):
                         articles_map = {}
@@ -315,9 +328,19 @@ def main():
                             result = process_PMC_result(root)
                             
                             result.URL = PMC_URL + result_id
-                            result.disease = filtered_euro_articles_map.get(result_id).disease_name
+                            
+                            '''
+                            TEST
+                            '''
+                            thing = filtered_euro_articles_map.get(result_id)
+                            if thing is None:
+                                "We have a problem"
+                                result.disease = "unknown"
+                            else:
+                                result.disease = filtered_euro_articles_map.get(result_id).disease_name
                                 
                             articles_map[result._id] = result
+                            
                         if bool(articles_map):
                             print "Found {} articles for the database".format(len(articles_map.keys()))    
                             write_article_db(cnx, articles_map)
