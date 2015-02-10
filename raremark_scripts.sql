@@ -10,7 +10,7 @@ select * from raremark.article as a WHERE a._id=24582695;
 select * from raremark.article_abstract;
 select * from raremark.article order by journal;
 select * from raremark.disease;
-select * from raremark.mesh_term;
+select * from raremark.mesh_term order by disease_id;
 
 truncate table raremark.disease;
 
@@ -27,7 +27,7 @@ WHERE a._id=23350580;
 
 commit;
 
-Proximal spinal muscular atrophy
+
 INSERT INTO raremark.disease values(1, "Fabry's disease", "Fabry");
 INSERT INTO raremark.disease values(2, "Huntingdon's disease", "Huntingdon");
 INSERT INTO raremark.disease values(3, "Muscular Atrophy, Spinal", "SMA");
@@ -36,7 +36,6 @@ INSERT INTO raremark.disease values(5, "Behcet disease", "Behcet");
 INSERT INTO raremark.disease values(6, "Gaucher disease", "Gaucher");
 INSERT INTO raremark.disease values(7, "Myelofibrosis", "Myelofibrosis");
 
-
 INSERT INTO raremark.mesh_term values(1, 1, "Anderson-Fabry Disease");
 INSERT INTO raremark.mesh_term values(2, 1, "alpha-Galactosidase A Deficiency Disease");
 INSERT INTO raremark.mesh_term values(3, 1, "Fabry Disease");
@@ -44,6 +43,22 @@ INSERT INTO raremark.mesh_term values(4, 3, "Muscular Atrophy, Spinal");
 INSERT INTO raremark.mesh_term values(5, 1, "Fabry's disease");
 INSERT INTO raremark.mesh_term values(6, 2, "Huntington's Disease");
 
+INSERT INTO raremark.mesh_term values(7, 1, "alpha Galactosidase A Deficiency Disease");
+INSERT INTO raremark.mesh_term values(8, 1, "Anderson Fabry Disease");
+INSERT INTO raremark.mesh_term values(9, 1, "Angiokeratoma Diffuse");
+INSERT INTO raremark.mesh_term values(10, 1, "Ceramide Trihexosidase Deficiency");
+INSERT INTO raremark.mesh_term values(11, 1, "Deficiency, Ceramide Trihexosidase");
+INSERT INTO raremark.mesh_term values(12, 1, "Fabry's Disease");
+INSERT INTO raremark.mesh_term values(13, 1, "GLA Deficiency");
+INSERT INTO raremark.mesh_term values(14, 1, "Deficiency, GLA");
+INSERT INTO raremark.mesh_term values(15, 1, "Hereditary Dystopic Lipidosis");
+INSERT INTO raremark.mesh_term values(16, 1, "Lipidosis, Hereditary Dystopic");
+INSERT INTO raremark.mesh_term values(17, 1, "alpha-Galactosidase A Deficiency");
+INSERT INTO raremark.mesh_term values(18, 1, "Deficiency, alpha-Galactosidase A");
+INSERT INTO raremark.mesh_term values(19, 1, "alpha Galactosidase A Deficiency");
+INSERT INTO raremark.mesh_term values(20, 1, "Angiokeratoma, Diffuse");
+INSERT INTO raremark.mesh_term values(21, 1, "Diffuse Angiokeratoma");
+INSERT INTO raremark.mesh_term values(22, 1, "Angiokeratoma Corporis Diffusum");
 
 insert into raremark.article_id(_id) values("12611534") on duplicate key update _id=values(_id);
 
