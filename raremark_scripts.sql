@@ -18,6 +18,8 @@ truncate table raremark.article_id;
 truncate table raremark.article;
 truncate table raremark.article_abstract;
 
+insert into raremark.article_archive select * from article;
+
 select count(*) from raremark.article;
  
 SELECT a._id, a.publish_date, a.title, a.URL, ab.abstract_text

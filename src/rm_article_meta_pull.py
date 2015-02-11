@@ -112,18 +112,17 @@ def process_PMC_result(rootXML):
             
             medline_date_txt = medline_date.text
             
-            # have we a half-decent format ?
+            # have we a half-decent date format ?
             p1 = re.compile('^\d{4} ([A-Z][a-z]{2}-[A-Z][a-z]{2})')
             m1 = p1.match(medline_date_txt)
             
-            # TODO: default this for now and sort out later
             if m1 is not None:
                 month_span = m1.group(1)
                 month = month_span[:3]
                 if  month not in MONTHS:
                     month = "Jan"   # default to Jan
             else:
-                month = "Dec"
+                month = "Jan"
             
             p2 = re.compile('^\d{4}')
             m2 = p2.match(medline_date_txt)
