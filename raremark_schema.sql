@@ -2,7 +2,9 @@ DROP TABLE article;
 DROP TABLE article_archive;
 DROP TABLE article_id;
 DROP TABLE article_abstract;
+DROP TABLE article_abstract_archive;
 DROP TABLE disease;
+DROP TABLE disease_archive;
 DROP TABLE mesh_term;
 
 CREATE TABLE `article_id` (
@@ -61,3 +63,18 @@ CREATE TABLE `article_archive` (
   PRIMARY KEY (`_id`),
   UNIQUE KEY `_id_UNIQUE` (`_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `article_abstract_archive` (
+  `_id` int(10) unsigned NOT NULL,
+  `abstract_text` text,
+  PRIMARY KEY (`_id`),
+  UNIQUE KEY `_id_UNIQUE` (`_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `disease_archive` (
+  `_id` int(10) unsigned NOT NULL,
+  `disease_name` varchar(200),
+  `short_name` varchar(200),
+  PRIMARY KEY (`_id`),
+  UNIQUE KEY `_id_UNIQUE` (`_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;

@@ -19,6 +19,8 @@ truncate table raremark.article;
 truncate table raremark.article_abstract;
 
 insert into raremark.article_archive select * from article;
+insert into raremark.article_abstract_archive select * from article_abstract;
+insert into raremark.disease_archive select * from disease;
 
 select count(*) from raremark.article;
  
@@ -31,7 +33,7 @@ commit;
 
 
 INSERT INTO raremark.disease values(1, "Fabry's disease", "Fabry");
-INSERT INTO raremark.disease values(2, "Huntingdon's disease", "Huntingdon");
+INSERT INTO raremark.disease values(2, "Huntington's disease", "Huntintdon");
 INSERT INTO raremark.disease values(3, "Muscular Atrophy, Spinal", "SMA");
 INSERT INTO raremark.disease values(4, "Duchenne muscular dystrophy", "Duchenne");
 INSERT INTO raremark.disease values(5, "Behcet syndrome", "Behcet");

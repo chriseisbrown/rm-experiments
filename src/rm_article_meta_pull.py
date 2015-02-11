@@ -7,6 +7,7 @@ import xml.sax.saxutils as saxutils
 import mysql.connector
 import requests
 import re
+import math
 from datetime import datetime
 
 try:
@@ -36,7 +37,9 @@ EURO_PMC_URL  = "http://www.ebi.ac.uk/europepmc/webservices/rest/search/query=ti
 EURO_PMC_URL_SRC_EXTENSION = " src:MED "
 EURO_PMC_URL_YEAR_EXTENSION = " pub_year:"
 
-YEARS = ["2010", "2011", "2012", "2013", "2014", "2015"]
+YEARS = [ "2010", "2011", "2012", "2013", "2014", "2015" ]
+#YEARS = ["2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015"]
+
 MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 PMC_URL = "http://www.ncbi.nlm.nih.gov/pubmed/"
@@ -51,8 +54,8 @@ def process_hit_count(rootXML):
     return hits
     
 
-def process_EuroPMC_result(disease_name, rootXML):
-    euro_articles_map = {}
+def process_EuroPMC_result(euro_articles_map, disease_name, rootXML):
+    #euro_articles_map = {}
     hits = process_hit_count(rootXML)
     if hits == 0:
         return euro_articles_map
@@ -301,7 +304,31 @@ def main():
                 txt = saxutils.unescape(raw_txt)
                 
                 root = ET.fromstring(txt)
-                euro_articles_map = process_EuroPMC_result(dis.name, root)
+                
+                hits = process_hit_count(root)
+                value = hits / 25.0
+                pages = math.ceil(value)
+                print pages
+                euro_articles_map = {}
+                for i in range(0, int(pages)):
+                    page = i + 1
+                    URL = EURO_PMC_URL + category_query + EURO_PMC_URL_SRC_EXTENSION +  EURO_PMC_URL_YEAR_EXTENSION + year + " &page=" + str(page)
+                    print URL
+
+                    results = requests.get(URL)            
+                    assert results.status_code == 200  
+                
+                    # need to unescape data that was returned
+                    raw_txt = results.content
+                    txt = saxutils.unescape(raw_txt)
+                    
+                    try:
+                        root = ET.fromstring(txt)
+                        process_EuroPMC_result(euro_articles_map, dis.name, root)
+
+                    except:
+                        print "XML Process error {}"
+                    
                 '''
                 If we get results from the EuroPMC index then go to US PubMed Central and get details
                 '''
