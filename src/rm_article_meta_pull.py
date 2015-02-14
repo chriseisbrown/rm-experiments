@@ -37,7 +37,7 @@ EURO_PMC_URL  = "http://www.ebi.ac.uk/europepmc/webservices/rest/search/query=ti
 EURO_PMC_URL_SRC_EXTENSION = " src:MED "
 EURO_PMC_URL_YEAR_EXTENSION = " pub_year:"
 
-YEARS = [ "2010", "2011", "2012", "2013", "2014", "2015" ]
+YEARS = [ "2014", "2015" ]
 #YEARS = ["2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015"]
 
 MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -111,7 +111,6 @@ def process_PMC_result(rootXML):
         
         medline_date = pub_date.find('MedlineDate')
         if medline_date != None:
-            print "found medline date !"
             
             medline_date_txt = medline_date.text
             
@@ -251,6 +250,9 @@ def filter_euro_articles(cnx, euro_articles_map):
 MAIN 
 ''' 
 def main():
+    start = datetime.today()
+    print start
+    
     cnx = mysql.connector.connect(user='root', database='raremark')
     cursor = cnx.cursor()
 
@@ -272,7 +274,10 @@ def main():
     For each disease get the MeSH category terms 
     '''
     for dis in disease:
-        print "***", dis.short_name, ":", dis.name, "***"        
+        disease_start = datetime.today()
+        print "*** ", dis.short_name, ":", dis.name, "{} ***".format(disease_start.strftime("%Y-%m-%d-%H%M"))        
+        
+        
         mesh_term_query = ("select entry_term from {} where disease_id= %(disease_id)s").format(MESHTERM_TABLE)
         cursor.execute(mesh_term_query, {'disease_id' : dis._id})
         for entry_term in cursor:
@@ -305,10 +310,13 @@ def main():
                 
                 root = ET.fromstring(txt)
                 
+                '''
+                Data coming back from REST service will be paginated
+                '''
                 hits = process_hit_count(root)
                 value = hits / 25.0
                 pages = math.ceil(value)
-                print pages
+
                 euro_articles_map = {}
                 for i in range(0, int(pages)):
                     page = i + 1
@@ -376,7 +384,12 @@ def main():
         
     cursor.close()
     cnx.close()
-    print "Done!"
+    
+    end = datetime.today()
+    elapsed = end - start
+    print "Done! {}".format(end.strftime("%Y-%m-%d-%H%M"))
+    
+    
     
 if __name__ == "__main__":
     main()
