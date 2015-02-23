@@ -37,7 +37,7 @@ EURO_PMC_URL  = "http://www.ebi.ac.uk/europepmc/webservices/rest/search/query=ti
 EURO_PMC_URL_SRC_EXTENSION = " src:MED "
 EURO_PMC_URL_YEAR_EXTENSION = " pub_year:"
 
-YEARS = [ "2014", "2015" ]
+YEARS = [ "2005", "2006", "2007", "2008", "2009" ]
 #YEARS = ["2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015"]
 
 MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -86,8 +86,7 @@ def process_EuroPMC_result(euro_articles_map, disease_name, rootXML):
     return euro_articles_map
 
 
-def process_PMC_result(rootXML):
-    
+def process_PMC_result(rootXML):   
     article = Article()
            
     for elem in rootXML.iterfind('PubmedArticle/MedlineCitation/PMID'):
@@ -311,7 +310,7 @@ def main():
                 root = ET.fromstring(txt)
                 
                 '''
-                Data coming back from REST service will be paginated
+                Data coming back from the REST service will be paginated, 25 results to a page, deal with it
                 '''
                 hits = process_hit_count(root)
                 value = hits / 25.0

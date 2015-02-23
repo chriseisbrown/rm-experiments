@@ -33,7 +33,7 @@ commit;
 
 
 INSERT INTO raremark.disease values(1, "Fabry's disease", "Fabry");
-INSERT INTO raremark.disease values(2, "Huntington's disease", "Huntintdon");
+INSERT INTO raremark.disease values(2, "Huntington's disease", "Huntington");
 INSERT INTO raremark.disease values(3, "Muscular Atrophy, Spinal", "SMA");
 INSERT INTO raremark.disease values(4, "Duchenne muscular dystrophy", "Duchenne");
 INSERT INTO raremark.disease values(5, "Behcet syndrome", "Behcet");
@@ -46,7 +46,6 @@ INSERT INTO raremark.mesh_term values(3, 1, "Fabry Disease");
 INSERT INTO raremark.mesh_term values(4, 3, "Muscular Atrophy, Spinal");
 INSERT INTO raremark.mesh_term values(5, 1, "Fabry's disease");
 INSERT INTO raremark.mesh_term values(6, 2, "Huntington's Disease");
-
 INSERT INTO raremark.mesh_term values(7, 1, "alpha Galactosidase A Deficiency Disease");
 INSERT INTO raremark.mesh_term values(8, 1, "Anderson Fabry Disease");
 INSERT INTO raremark.mesh_term values(9, 1, "Angiokeratoma Diffuse");
