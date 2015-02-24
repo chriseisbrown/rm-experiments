@@ -37,7 +37,7 @@ EURO_PMC_URL  = "http://www.ebi.ac.uk/europepmc/webservices/rest/search/query=ti
 EURO_PMC_URL_SRC_EXTENSION = " src:MED "
 EURO_PMC_URL_YEAR_EXTENSION = " pub_year:"
 
-YEARS = [ "2005", "2006", "2007", "2008", "2009" ]
+YEARS = [ "2009" ]
 #YEARS = ["2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015"]
 
 MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -306,15 +306,18 @@ def main():
                 # need to unescape data that was returned
                 raw_txt = results.content
                 txt = saxutils.unescape(raw_txt)
-                
-                root = ET.fromstring(txt)
-                
-                '''
-                Data coming back from the REST service will be paginated, 25 results to a page, deal with it
-                '''
-                hits = process_hit_count(root)
-                value = hits / 25.0
-                pages = math.ceil(value)
+                try:
+                    root = ET.fromstring(txt)
+                    '''
+                    Data coming back from the REST service will be paginated, 25 results to a page, deal with it
+                    '''
+                    hits = process_hit_count(root)
+                    value = hits / 25.0
+                    pages = math.ceil(value)
+                except:
+                    print "XML error processing results from Euro PMC query"
+                    print "Skipping processing for {} {}".format(category_query, year)
+                    pages = 0
 
                 euro_articles_map = {}
                 for i in range(0, int(pages)):
@@ -332,9 +335,8 @@ def main():
                     try:
                         root = ET.fromstring(txt)
                         process_EuroPMC_result(euro_articles_map, dis.name, root)
-
                     except:
-                        print "XML Process error {}"
+                        print "XML Process error"
                     
                 '''
                 If we get results from the EuroPMC index then go to US PubMed Central and get details
