@@ -55,6 +55,7 @@ def process_hit_count(rootXML):
 
 def process_EuroPMC_result(euro_articles_map, disease_name, rootXML):
     
+    ''' if no hits then just return what you were given '''
     hits = process_hit_count(rootXML)
     if hits == 0:
         return euro_articles_map
@@ -359,21 +360,22 @@ def main():
                             txt = saxutils.unescape(raw_txt)
                             
                             root = ET.fromstring(txt)
-                            result = process_PMC_result(root)
+                            article = process_PMC_result(root)
                             
-                            result.URL = PMC_URL + result_id
+                            article.URL = PMC_URL + result_id
                             
                             '''
-                            Check that we have an article for a given id before trying to access it
+                            We want to copy the disease category from the euro object into the found article but
+                            check that we have an article in the euro map first for a given id before trying to access it
                             '''
-                            thing = filtered_euro_articles_map.get(result_id)
-                            if thing is None:
-                                "We have a problem"
-                                result.disease = "unknown"
+                            euro_article = filtered_euro_articles_map.get(result_id)
+                            if euro_article is None:
+                                print "Do not have the euro article in the map for id {}".format(result_id)
+                                article.disease = "unknown"
                             else:
-                                result.disease = filtered_euro_articles_map.get(result_id).disease_name
+                                article.disease = filtered_euro_articles_map.get(result_id).disease_name
                                 
-                            articles_map[result._id] = result
+                            articles_map[article._id] = article
                             
                         if bool(articles_map):
                             print "Found {} articles for the database".format(len(articles_map.keys()))    
