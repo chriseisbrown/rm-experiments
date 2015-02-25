@@ -37,14 +37,13 @@ EURO_PMC_URL  = "http://www.ebi.ac.uk/europepmc/webservices/rest/search/query=ti
 EURO_PMC_URL_SRC_EXTENSION = " src:MED "
 EURO_PMC_URL_YEAR_EXTENSION = " pub_year:"
 
-YEARS = [ "2009" ]
-#YEARS = ["2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015"]
+YEARS = ["2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015"]
 
 MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 PMC_URL = "http://www.ncbi.nlm.nih.gov/pubmed/"
 PMC_URL_EXTENSION = "?report=xml&format=xml"
-
+# example search URL:
 #http://www.ebi.ac.uk/europepmc/webservices/rest/search/query=title:"Anderson-Fabry disease","fabry" src:MED pub_year:2015
 
 def process_hit_count(rootXML):
@@ -55,7 +54,7 @@ def process_hit_count(rootXML):
     
 
 def process_EuroPMC_result(euro_articles_map, disease_name, rootXML):
-    #euro_articles_map = {}
+    
     hits = process_hit_count(rootXML)
     if hits == 0:
         return euro_articles_map
@@ -121,7 +120,7 @@ def process_PMC_result(rootXML):
                 month_span = m1.group(1)
                 month = month_span[:3]
                 if  month not in MONTHS:
-                    month = "Jan"   # default to Jan
+                    month = "Jan"   # default to Jan if no match
             else:
                 month = "Jan"
             
@@ -365,7 +364,7 @@ def main():
                             result.URL = PMC_URL + result_id
                             
                             '''
-                            TEST
+                            Check that we have an article for a given id before trying to access it
                             '''
                             thing = filtered_euro_articles_map.get(result_id)
                             if thing is None:
