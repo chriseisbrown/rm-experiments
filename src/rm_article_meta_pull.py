@@ -210,7 +210,9 @@ def write_db_euro_articles(cnx, articles_map):
 
 
 '''
-Build a list of ids in the database to retrieve article data for
+Build a list of ids in the database to retrieve article data for.
+Remove any that we already have in the article table from the article_id table.  This leaves
+only ids that are new to us, so load them into the "filtered list" and return it
 '''
 def filter_euro_articles(cnx, euro_articles_map):
     db_count = 0
