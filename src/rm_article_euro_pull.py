@@ -7,6 +7,7 @@ import xml.sax.saxutils as saxutils
 import mysql.connector
 import requests
 import re
+import os
 import math
 from datetime import datetime
 from xlwt import Workbook
@@ -39,7 +40,7 @@ EURO_PMC_URL_SRC_EXTENSION = " src:MED "
 EURO_PMC_URL_YEAR_EXTENSION = " pub_year:"
 EURO_PMC_URL_RESULT_TYPE_PARAM = "resultType=CORE"
 
-YEARS = ["2015"]
+YEARS = ["2014", "2015"]
 #YEARS = ["2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015"]
 
 MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -48,6 +49,10 @@ PMC_URL = "http://www.ncbi.nlm.nih.gov/pubmed/"
 PMC_URL_EXTENSION = "?report=xml&format=xml"
 # example search URL:
 #http://www.ebi.ac.uk/europepmc/webservices/rest/search/query=title:"Anderson-Fabry-disease","fabry" src:MED pub_year:2015 resultType:CORE
+INPUT_DIR = "../input-data/"
+OUTPUT_DIR = "../output-data/"
+INPUT_FILE_NAME = "Data collection.xlsx"
+OUTPUT_FILE_NAME = "pipeline_report_{}.xls".format(datetime.today().strftime("%Y-%m-%d-%H%M"))
 
 def process_hit_count(rootXML):
     hits = 0
@@ -89,106 +94,6 @@ def process_EuroPMC_result(euro_articles_map, disease_name, rootXML):
     return euro_articles_map
 
 
-def process_PMC_result(rootXML):   
-    article = Article()
-           
-    for elem in rootXML.iterfind('PubmedArticle/MedlineCitation/PMID'):
-        attributes = elem.attrib
-        article.version = int(attributes['Version'])
-        article.doc_version = attributes['Version']
-        article._id = elem.text
-        #print article._id
-        article.id_type = "PMID"
-        
-    for elem in rootXML.iterfind('PubmedArticle/MedlineCitation/Article/ArticleTitle'):
-        article.title = elem.text
-             
-    for elem in rootXML.iterfind('PubmedArticle/MedlineCitation/Article/Abstract/AbstractText'):
-        article.abstract_text = elem.text 
-        
-    for elem in rootXML.iterfind('PubmedArticle/MedlineCitation/Article/Journal/Title'):
-        article.journal = elem.text 
-        
-    for pub_date in rootXML.iterfind('PubmedArticle/MedlineCitation/Article/Journal/JournalIssue/PubDate'):
-        
-        medline_date = pub_date.find('MedlineDate')
-        if medline_date != None:
-            
-            medline_date_txt = medline_date.text
-            
-            # have we a half-decent date format ?
-            p1 = re.compile('^\d{4} ([A-Z][a-z]{2}-[A-Z][a-z]{2})')
-            m1 = p1.match(medline_date_txt)
-            
-            if m1 is not None:
-                month_span = m1.group(1)
-                month = month_span[:3]
-                if  month not in MONTHS:
-                    month = "Jan"   # default to Jan if no match
-            else:
-                month = "Jan"
-            
-            p2 = re.compile('^\d{4}')
-            m2 = p2.match(medline_date_txt)
-            year = m2.group()
-            if year is None:
-                year = "1900"
-                
-            day = "01"
-            
-        else:
-            year = pub_date.find('Year')
-            if year is None:
-                year = "1900"
-            else:
-                year = year.text
-            
-            month = pub_date.find('Month')
-            if month is None:
-                month = "Jan"   # default to Jan
-            else:
-                month = month.text
-                if month not in MONTHS:
-                    month = "Jan" # default to Jan
-              
-            day = pub_date.find('Day')
-            if day is None:
-                day = "01"
-            else:
-                day = day.text
-              
-        published_date = datetime.strptime(year + ' ' + month + ' ' + day, '%Y %b %d' ).date()
-        article.publish_date = published_date.isoformat()  
-        
-    return article
-
-
-def write_article_db(cnx, articles_map):
-    # do writes to db from map
-    db_count = 0
-    db_error_count = 0 
-    for article in articles_map.itervalues():    
-           
-        insert_article_query = ("INSERT INTO {}({}) values(%s,%s,%s,%s,%s,%s,%s,%s,%s) ON DUPLICATE KEY UPDATE \
-            _id =VALUES(_id),disease=(disease),URL =VALUES(URL),id_type =VALUES(id_type),title =VALUES(title),version =VALUES(version), \
-            doc_version =VALUES(doc_version),journal =VALUES(journal),publish_date =VALUES(publish_date)"
-            .format(ARTICLE_TABLE, ARTICLE_COLUMNS))
-
-        insert_abstract_query = ("INSERT INTO {}({}) values(%s, %s) ON DUPLICATE KEY UPDATE \
-            _id=VALUES(_id),abstract_text=VALUES(abstract_text)"
-            .format(ABSTRACT_TABLE, ABSTRACT_COLUMNS))
-        
-        try:
-            cursor = cnx.cursor()
-            cursor.execute(insert_article_query, (article._id, article.disease, article.URL, article.id_type, article.title.encode('utf-8'),
-                               article.version, article.doc_version, article.journal.encode('utf-8'), article.publish_date))
-            cursor.execute(insert_abstract_query, (article._id, article.abstract_text.encode('utf-8')))   
-            cnx.commit()
-            db_count += 1
-        except mysql.connector.Error as error:
-            print "Error {} attempting to upsert article {}".format(error, article._id)
-            db_error_count += 1    
-
 '''
 Write any article ids that we found in the euro index
 '''             
@@ -215,47 +120,41 @@ def write_db_euro_articles(cnx, articles_map):
 '''
 Write out euro PMC results to spreadsheet
 '''             
-def write_ssheet_euro_articles(cnx, articles_map):
+def write_ssheet_euro_articles(articles_map):
+    wb = Workbook()
+    ws = wb.add_sheet('Lit output', cell_overwrite_ok=True)
+    # make header row
+    ws.row(0).write(0,'id')
+    ws.row(0).write(1,'disease')
+    ws.row(0).write(2,'title')
+    ws.row(0).write(3,'pub year')
+    ws.row(0).write(4,'authors')
+    ws.row(0).write(5,'source')
+    ws.row(0).write(6,'PubMed id')
+    #ws.row(0).write(7,'time')
+    #ws.row(0).write(8,'next event 1')
+    #ws.row(0).write(9,'next event 2')
+        
+    row_num = 1
+    for k in articles_map.keys():
+        euro_article = articles_map.get(k)
+        #print "processing article {} {}".format(euro_article.id, euro_article.disease_name)
+ 
+        ws.row(row_num).write(0,euro_article.id)
+        ws.row(row_num).write(1,euro_article.disease_name)
+        ws.row(row_num).write(2,euro_article.title)
+        ws.row(row_num).write(3,euro_article.pub_year)
+        ws.row(row_num).write(4,euro_article.author_string)
+        ws.row(row_num).write(5,euro_article.source)
+        ws.row(row_num).write(6,euro_article.pmid) 
+        
+        row_num += 1   
+          
+    output_file = os.path.join(OUTPUT_DIR, OUTPUT_FILE_NAME)
+    wb.save(output_file)
+    print "writing output data to file {}".format(output_file)
     return
 
-
-
-'''
-Build a list of ids in the database to retrieve article data for.
-Remove any that we already have in the article table from the article_id table.  This leaves
-only ids that are new to us, so load them into the "filtered list" and return it
-'''
-def filter_euro_articles(cnx, euro_articles_map):
-    db_count = 0
-    db_error_count = 0 
-    
-    delete_euro_article_query = ("delete from {} WHERE {} in (select {} from {})"
-        .format(ARTICLE_ID_TABLE, ARTICLE_ID_COLUMN, ARTICLE_ID_COLUMN, ARTICLE_TABLE))
-    
-    try:
-        cursor = cnx.cursor()
-        cursor.execute(delete_euro_article_query)
-        cnx.commit()
-    except mysql.connector.Error as error:
-        print "Error {} attempting to delete from table {}".format(error, ARTICLE_ID_TABLE)
-    
-
-    select_euro_article_id_query = ("select {} from {}".format(ARTICLE_ID_COLUMN, ARTICLE_ID_TABLE))
-    
-    try:
-        cursor = cnx.cursor()
-        cursor.execute(select_euro_article_id_query)
-        
-        filtered_euro_articles_map = {}
-        for _id in cursor:
-            euro_article = euro_articles_map.get(str(_id[0]))
-            filtered_euro_articles_map[str(_id[0])] = euro_article
-            
-    except mysql.connector.Error as error:
-        print "Error {} attempting to select from table {}".format(error, ARTICLE_ID_TABLE)
-        db_error_count += 1  
-
-    return filtered_euro_articles_map
 
 
 '''
@@ -306,6 +205,8 @@ def main():
             category_list.append(quoted_category)
         #category_query = ",".join(category_list)
         
+        euro_articles_map = {}
+        
         for year in YEARS:
             '''
             Use the Euro PMC RESTful service for each Mesh category for each year required 
@@ -316,9 +217,8 @@ def main():
                 results = requests.get(URL)            
                 assert results.status_code == 200  
                 
-                # need to unescape data that was returned
                 raw_txt = results.content
-                #txt = saxutils.unescape(raw_txt)
+                
                 try:
                     root = ET.fromstring(raw_txt)
                     '''
@@ -333,7 +233,6 @@ def main():
                     print "Skipping processing for {} {}".format(category_query, year)
                     pages = 0
 
-                euro_articles_map = {}
                 for i in range(0, int(pages)):
                     page = i + 1
                     URL = EURO_PMC_URL + category_query + EURO_PMC_URL_SRC_EXTENSION +  EURO_PMC_URL_YEAR_EXTENSION + year + " &page=" + str(page)
@@ -342,9 +241,7 @@ def main():
                     results = requests.get(URL)            
                     assert results.status_code == 200  
                 
-                    # need to unescape data that was returned
                     raw_txt = results.content
-                    #txt = saxutils.unescape(raw_txt)
                     
                     try:
                         root = ET.fromstring(raw_txt)
@@ -352,17 +249,16 @@ def main():
                     except ET.ParseError as XMLerror:
                         print "XML Process error {}".format(XMLerror.args)
                     
-                print "Found {} euro article ids for consideration".format(len(euro_articles_map.keys()))    
 
-                ''' here we will write to spreadsheet '''
-                #write_db_euro_articles(cnx, euro_articles_map)
-                
+
+        ''' Write map contents to spreadsheet '''
+        print "Found {} euro article ids for consideration".format(len(euro_articles_map.keys()))    
+        write_ssheet_euro_articles(euro_articles_map)        
         
     cursor.close()
     cnx.close()
     
     end = datetime.today()
-    elapsed = end - start
     print "Done! {}".format(end.strftime("%Y-%m-%d-%H%M"))
     
     
