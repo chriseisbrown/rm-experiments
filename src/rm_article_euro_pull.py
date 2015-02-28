@@ -41,7 +41,7 @@ EURO_PMC_URL_SRC_EXTENSION = " src:MED "
 EURO_PMC_URL_YEAR_EXTENSION = " pub_year:"
 EURO_PMC_URL_RESULT_TYPE_PARAM = "resultType=CORE"
 
-#YEARS = ["2014", "2015"]
+#YEARS = ["2015"]
 YEARS = ["2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015"]
 
 MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -117,6 +117,7 @@ def process_EuroPMC_result(euro_articles_map, disease_name, rootXML):
             for author in result.iterfind('authorList/author'):
                 disease_author = Author()
                 disease_author.article_id = euro_article_result.id
+                disease_author.disease_name = euro_article_result.disease_name
                 
                 author_name = author.find('fullName')
                 if author_name is not None:
@@ -126,7 +127,7 @@ def process_EuroPMC_result(euro_articles_map, disease_name, rootXML):
                 if affiliation is not None:
                     disease_author.affiliation = author.find('affiliation').text
                     
-                euro_article_result.author.append(disease_author)
+                euro_article_result.authors.append(disease_author)
             
             
             # add to collection
@@ -135,36 +136,18 @@ def process_EuroPMC_result(euro_articles_map, disease_name, rootXML):
     return euro_articles_map
 
 
-'''
-Write any article ids that we found in the euro index
-'''             
-def write_db_euro_articles(cnx, articles_map):
-    # do writes to db from map
-    db_count = 0
-    db_error_count = 0 
-    for articleId in articles_map.iterkeys():    
-           
-        insert_euro_article_query = ("insert into {}({}) values(%(_id)s) on duplicate key update _id=values(_id)"
-            .format(ARTICLE_ID_TABLE, ARTICLE_ID_COLUMN))
-        
-        try:
-            cursor = cnx.cursor()
-            cursor.execute(insert_euro_article_query, {'_id':articleId})
-            db_count += 1
-        except mysql.connector.Error as error:
-            print "Error {} attempting to upsert article_id {} into {}".format(error, articleId, ARTICLE_ID_TABLE)
-            db_error_count += 1  
-        
-    cnx.commit() 
-
 
 '''
 Write out euro PMC results to spreadsheet
 '''             
 def write_ssheet_euro_articles(articles_map):
+    authors_list = []
+    
     wb = Workbook()
     ws = wb.add_sheet('Lit output', cell_overwrite_ok=True)
-    # make header row
+    ws_authors = wb.add_sheet('Authors', cell_overwrite_ok=True)
+
+    # make literature sheet header row
     ws.row(0).write(0,'id')
     ws.row(0).write(1,'disease')
     ws.row(0).write(2,'title')
@@ -183,6 +166,11 @@ def write_ssheet_euro_articles(articles_map):
     ws.row(0).write(15,'full text doc url')
     ws.row(0).write(16,'abstract')
     
+    # make authors sheet header row
+    ws_authors.row(0).write(0,'disease')
+    ws_authors.row(0).write(1,'article id')
+    ws_authors.row(0).write(2,'full name')
+    ws_authors.row(0).write(3,'affiliation')
         
     row_num = 1
     for k in articles_map.keys():
@@ -205,8 +193,22 @@ def write_ssheet_euro_articles(articles_map):
         ws.row(row_num).write(14,euro_article.full_text_availability_doc_style)
         ws.row(row_num).write(15,euro_article.full_text_availability_doc_url)
         ws.row(row_num).write(16,euro_article.abstract)
+        
+        # make authors list here ready for writing out
+        for author in euro_article.authors:
+            authors_list.append(author)
 
         row_num += 1   
+        
+        
+    row_num = 1
+    for article_author in authors_list:
+        ws_authors.row(row_num).write(0, article_author.disease_name)
+        ws_authors.row(row_num).write(1, article_author.article_id)
+        ws_authors.row(row_num).write(2, article_author.full_name)
+        ws_authors.row(row_num).write(3, article_author.affiliation)
+        row_num += 1
+          
           
     output_file = os.path.join(OUTPUT_DIR, OUTPUT_FILE_NAME)
     wb.save(output_file)
