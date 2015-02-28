@@ -20,6 +20,7 @@ except ImportError:
 from Disease import Disease
 from EuroPMCArticle import EuroPMCArticle
 from Article import Article
+from Author import Author
 
 
 
@@ -112,6 +113,20 @@ def process_EuroPMC_result(euro_articles_map, disease_name, rootXML):
                 euro_article_result.full_text_availability = result.find('fullTextUrlList/fullTextUrl/availability').text
                 euro_article_result.full_text_availability_doc_style = result.find('fullTextUrlList/fullTextUrl/documentStyle').text
                 euro_article_result.full_text_availability_doc_url = result.find('fullTextUrlList/fullTextUrl/url').text
+            
+            for author in result.iterfind('authorList/author'):
+                disease_author = Author()
+                disease_author.article_id = euro_article_result.id
+                
+                author_name = author.find('fullName')
+                if author_name is not None:
+                    disease_author.full_name = author.find('fullName').text
+                
+                affiliation = author.find('affiliation')
+                if affiliation is not None:
+                    disease_author.affiliation = author.find('affiliation').text
+                    
+                euro_article_result.author.append(disease_author)
             
             
             # add to collection

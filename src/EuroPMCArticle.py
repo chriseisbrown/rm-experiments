@@ -22,3 +22,6 @@ class EuroPMCArticle(object):
         self.full_text_availability = ""
         self.full_text_availability_doc_style = ""
         self.full_text_availability_doc_url = ""
+        
+        # authors collection
+        self.author = []
